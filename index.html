@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FOR LAYANUKI</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #0a0a0a;
+            color: #e5e5e5;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow-x: hidden;
+            user-select: none;
+        }
+        .serif-title {
+            font-family: 'Cormorant Garamond', serif;
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a2a2a;
+            border-radius: 2px;
+        }
+        .chapter-fade {
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+        footer {
+            width: 100%;
+            padding: 24px 0;
+            text-align: center;
+            font-size: 11px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: #555;
+        }
+        .btn-primary {
+            background-color: #f5f5f5;
+            color: #0a0a0a;
+            padding: 14px 32px;
+            border-radius: 9999px;
+            font-weight: 500;
+            font-size: 13px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 25px rgba(255,255,255,0.1);
+        }
+        .btn-primary:hover {
+            background-color: #ffffff;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background-color: #171717;
+            color: #d4d4d4;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 12px;
+            border: 1px solid #262626;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-secondary:hover {
+            border-color: #525252;
+            color: #ffffff;
+        }
+        .btn-secondary.selected {
+            background-color: #262626;
+            border-color: #737373;
+            color: #ffffff;
+        }
+        /* Wordle */
+        .wordle-tile {
+            width: 56px;
+            height: 56px;
+            border: 1px solid #262626;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-radius: 10px;
+            background-color: #121212;
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+        .wordle-tile.correct { background-color: rgba(5, 150, 105, 0.3); border-color: #059669; color: #a7f3d0; }
+        .wordle-tile.present { background-color: rgba(217, 119, 6, 0.3); border-color: #d97706; color: #fde68a; }
+        .wordle-tile.absent { background-color: #171717; border-color: #262626; color: #525252; }
+        
+        .kb-btn {
+            padding: 12px 10px;
+            background-color: #171717;
+            border: 1px solid #262626;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #d4d4d4;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .kb-btn:hover { background-color: #262626; }
+
+        /* Memory Match */
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+            width: 100%;
+            max-width: 480px;
+        }
+        @media (max-width: 768px) {
+            .memory-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        .memory-card {
+            aspect-ratio: 1;
+            border-radius: 12px;
+            border: 1px solid #262626;
+            background-color: #121212;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .memory-card:hover { border-color: #525252; }
+        .memory-card img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Slime Container */
+        .slime-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: linear-gradient(to bottom, #171717, #0a0a0a);
+            border: 4px solid #262626;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: grab;
+        }
+        .slime-container.preview-mode {
+            width: 380px;
+            height: 380px;
+            border-radius: 24px;
+            background: #121212;
+            cursor: grab;
+        }
+        .slime-container:active { cursor: grabbing; }
+
+        /* Book Spread */
+        .book-spread {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            background-color: #121212;
+            border: 1px solid #262626;
+            border-radius: 20px;
+            padding: 48px;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.6);
+            width: 100%;
+        }
+        .book-spread.full-width {
+            grid-template-columns: 1fr;
+        }
+        @media (max-width: 768px) {
+            .book-spread { grid-template-columns: 1fr; padding: 24px; }
+        }
+        .book-img {
+            width: 100%;
+            height: 340px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 1px solid #262626;
+            transition: transform 0.5s ease;
+        }
+        .book-img:hover { transform: scale(1.02); }
+
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="confetti-canvas"></canvas>
+    <main id="app-container">
+        <!-- Chapters injected dynamically -->
+    </main>
+
+    <footer>
+        Made with luv by ur besti zeach :D
+    </footer>
+
+    <script>
+        // --- PERSONALIZED PHOTO DATA ---
+        const MEMORY_PHOTOS = [
+            { id: 1, url: "photo1.png", caption: "Adventures together" },
+            { id: 2, url: "photo2.png", caption: "Countless laughs" },
+            { id: 3, url: "photo3.png", caption: "Late night talks" },
+            { id: 4, url: "photo4.jpg", caption: "Pure joy" }
+        ];
+
+        const BOOK_PAGES = [
+            {
+                title: "Chapter I — The Beginning",
+                text: "Who would've told me how lucky I was to meet you that summer of 2020. I would've never imagined that moment would lead to where we are nowadays, to something this special. It still amazes me that if that day something changed, we would've never had what we have. I'm remembering all our journey while typing this, and even with so many ups and downs, it's been an amazing journey, and I'd still choose you if I had to choose again. You've entertained me so much, helped me with many things, brought a smile into my face on my lowest.",
+                image: "photo5.jpg"
+            },
+            {
+                title: "Chapter II — Through Every Season",
+                text: "What can I say to you Layan, this is our 6th birthday together. And it still feels like the first one, these young teens that had no idea of what this was gonna be like. 6 years together, 2192 days, 52608 hours. It's crazy to think about it. For the very first moment, no awkward introductions, just an endless conversation. I still remember that first night, it was amazing. I couldn't leave Discord because of how much I was enjoying your company, and from that moment, I knew you were different.",
+                image: "photo6.png"
+            },
+            {
+                title: "You're special, don't let anyone make you think otherwise. Thank you for fighting for me, for us. Thank you for having the patience you have with me. Thank you for following my silly jokes. Thank you for everything, happy 19th birthday 🤍. For many more and forever, I love you.",
+                isCollagePage: true
+            }
+        ];
+
+        // --- STATE ---
+        let currentChapter = 0;
+
+        // Wordle State
+        const WORDLE_TARGET = "BESTI";
+        let wordleGuesses = [];
+        let wordleCurrentGuess = "";
+        let wordleGameOver = false;
+
+        // Memory Match State
+        let memoryCards = [];
+        let memoryFlipped = [];
+        let memoryMatched = [];
+        let memoryCanClick = true;
+
+        // Slime Studio State
+        let slimeStep = 0; 
+        let slimeGlue = 'Classic Clear';
+        let slimeColorHex = '#ec4899';
+        let slimeDecoration = 'Hearts ❤️';
+        let slimeAngleSum = 0;
+        let slimeLastMouseX = 0;
+        let slimeLastMouseY = 0;
+
+        // Three.js variables
+        let scene, camera, renderer, slimeMesh, slimeGeo, slimeMat, animFrameId, controls;
+        let originalPositions = null;
+        let mouseRay = new THREE.Vector2();
+        let raycaster = new THREE.Raycaster();
+        let isHoveringSlime = false;
+        let mouseWorldPos = new THREE.Vector3();
+        let decoMeshGroup = null;
+
+        // Book State
+        let bookPageIndex = 0;
+        let countdownInterval = null;
+
+        // --- ROUTER ---
+        function setChapter(index) {
+            if (animFrameId) cancelAnimationFrame(animFrameId);
+            if (countdownInterval) clearInterval(countdownInterval);
+            currentChapter = index;
+            render();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function render() {
+            const container = document.getElementById('app-container');
+            container.innerHTML = '';
+
+            switch(currentChapter) {
+                case 0: container.innerHTML = renderLanding(); break;
+                case 1: container.innerHTML = renderWordle(); initWordle(); break;
+                case 2: container.innerHTML = renderMemory(); initMemory(); break;
+                case 3: container.innerHTML = renderSlimeStudio(); initSlimeStudio(); break;
+                case 5: container.innerHTML = renderCountdown(); initCountdown(); break;
+                case 4: container.innerHTML = renderBook(); initBook(); break;
+            }
+        }
+
+        // ================= CONFETTI EFFECT =================
+        function triggerConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            let particles = [];
+            for (let i = 0; i < 120; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    r: Math.random() * 6 + 4,
+                    dx: (Math.random() - 0.5) * 4,
+                    dy: Math.random() * 4 + 3,
+                    color: ['#ec4899', '#8b5cf6', '#0ea5e9', '#10b981', '#fde047'][Math.floor(Math.random() * 5)],
+                    tilt: Math.random() * 10
+                });
+            }
+
+            let start = Date.now();
+            function frame() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.y += p.dy;
+                    p.x += p.dx;
+                    ctx.beginPath();
+                    ctx.fillStyle = p.color;
+                    ctx.ellipse(p.x, p.y, p.r, p.r * 0.6, p.tilt, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                if (Date.now() - start < 3000) {
+                    requestAnimationFrame(frame);
+                } else {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+            frame();
+        }
+
+        // ================= CHAPTER 0: LANDING =================
+        function renderLanding() {
+            return `
+                <div class="chapter-fade" style="display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 500px; gap: 32px;">
+                    <div style="width: 200px; height: 260px; border-radius: 16px; overflow: hidden; border: 1px solid #262626; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+                        <img src="landing-photo.png" style="width:100%; height:100%; object-fit:cover;" alt="Bestie">
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.3em; color: #737373;">Birthday girl</span>
+                        <h1 class="serif-title" style="font-size: 52px; font-weight: 300; color: #f5f5f5; line-height: 1.1;">Happy 19th Birthday Layanuki 🤍</h1>
+                        <p style="color: #a3a3a3; font-size: 14px; line-height: 1.6; max-width: 400px; margin: 0 auto;">
+                            Little surprise for my favorite person. I had to make something to match what you did for me on my birthday, so I hope you like it :)
+                        </p>
+                    </div>
+                    <button class="btn-primary" onclick="setChapter(1)">Start</button>
+                </div>
+            `;
+        }
+
+        // ================= CHAPTER 1: WORDLE =================
+        function renderWordle() {
+            return `
+                <div class="chapter-fade" style="display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 400px; width: 100%; gap: 32px;">
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.3em; color: #737373;">Mini Game I</span>
+                        <h2 class="serif-title" style="font-size: 38px; font-weight: 300; color: #f5f5f5;">WORDLE</h2>
+                        <p style="color: #a3a3a3; font-size: 13px;">Guess the 5 letter word that defines us.</p>
+                    </div>
+                    <div id="wordle-grid" style="display: grid; grid-template-rows: repeat(6, 1fr); gap: 8px; width: 100%;"></div>
+                    <div id="wordle-keyboard" style="display: flex; flex-direction: column; gap: 6px; width: 100%;"></div>
+                    <div id="wordle-message" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; color: #a3a3a3; height: 24px;"></div>
+                </div>
+            `;
+        }
+
+        function initWordle() {
+            wordleGuesses = [];
+            wordleCurrentGuess = "";
+            wordleGameOver = false;
+            buildWordleUI();
+        }
+
+        function buildWordleUI() {
+            const grid = document.getElementById('wordle-grid');
+            grid.innerHTML = '';
+            for (let r = 0; r < 6; r++) {
+                const row = document.createElement('div');
+                row.style.cssText = 'display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; justify-content: center;';
+                const guess = wordleGuesses[r] || (r === wordleGuesses.length ? wordleCurrentGuess : '');
+                
+                // Calculate evaluation status for each letter in submitted row using correct Wordle rules
+                let statuses = ['absent', 'absent', 'absent', 'absent', 'absent'];
+                if (r < wordleGuesses.length) {
+                    const targetChars = WORDLE_TARGET.split('');
+                    const guessChars = guess.split('');
+
+                    // 1. Pass: Check exact matches (greens) first
+                    for (let c = 0; c < 5; c++) {
+                        if (guessChars[c] === targetChars[c]) {
+                            statuses[c] = 'correct';
+                            targetChars[c] = null; // Mark as used
+                            guessChars[c] = null;
+                        }
+                    }
+
+                    // 2. Pass: Check present matches (oranges) for remaining characters
+                    for (let c = 0; c < 5; c++) {
+                        if (guessChars[c] !== null) {
+                            const targetIndex = targetChars.indexOf(guessChars[c]);
+                            if (targetIndex !== -1) {
+                                statuses[c] = 'present';
+                                targetChars[targetIndex] = null; // Mark as used
+                            } else {
+                                statuses[c] = 'absent';
+                            }
+                        }
+                    }
+                }
+
+                for (let c = 0; c < 5; c++) {
+                    const tile = document.createElement('div');
+                    tile.className = 'wordle-tile';
+                    const char = guess[c] || '';
+                    tile.textContent = char;
+                    
+                    if (r < wordleGuesses.length) {
+                        tile.classList.add(statuses[c]);
+                    } else if (char) {
+                        tile.style.borderColor = '#737373';
+                    }
+                    row.appendChild(tile);
+                }
+                grid.appendChild(row);
+            }
+
+            const kb = document.getElementById('wordle-keyboard');
+            kb.innerHTML = '';
+            const rows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
+            rows.forEach(rChars => {
+                const rowDiv = document.createElement('div');
+                rowDiv.style.cssText = 'display: flex; justify-content: center; gap: 6px;';
+                rChars.split('').forEach(char => {
+                    const btn = document.createElement('button');
+                    btn.textContent = char;
+                    btn.className = 'kb-btn';
+                    btn.onclick = () => handleWordleKey(char);
+                    rowDiv.appendChild(btn);
+                });
+                kb.appendChild(rowDiv);
+            });
+
+            const actionRow = document.createElement('div');
+            actionRow.style.cssText = 'display: flex; justify-content: center; gap: 8px; margin-top: 4px;';
+            const enterBtn = document.createElement('button');
+            enterBtn.textContent = 'ENTER';
+            enterBtn.className = 'kb-btn';
+            enterBtn.style.padding = '12px 20px';
+            enterBtn.onclick = () => handleWordleKey('ENTER');
+            const bkspBtn = document.createElement('button');
+            bkspBtn.textContent = 'DELETE';
+            bkspBtn.className = 'kb-btn';
+            bkspBtn.style.padding = '12px 20px';
+            bkspBtn.onclick = () => handleWordleKey('BACKSPACE');
+            actionRow.appendChild(enterBtn);
+            actionRow.appendChild(bkspBtn);
+            kb.appendChild(actionRow);
+        }
+
+        function handleWordleKey(key) {
+            if (wordleGameOver) return;
+            const msg = document.getElementById('wordle-message');
+            msg.textContent = '';
+
+            if (key === 'ENTER') {
+                if (wordleCurrentGuess.length < 5) {
+                    msg.textContent = 'Not enough letters';
+                    return;
+                }
+                wordleGuesses.push(wordleCurrentGuess);
+                const currentGuessCopy = wordleCurrentGuess;
+                wordleCurrentGuess = '';
+                buildWordleUI();
+
+                if (currentGuessCopy === WORDLE_TARGET) {
+                    wordleGameOver = true;
+                    msg.textContent = 'Correct! Unlocking next minigame...';
+                    setTimeout(() => setChapter(2), 1500);
+                } else if (wordleGuesses.length >= 6) {
+                    wordleGameOver = true;
+                    msg.textContent = `The word was ${WORDLE_TARGET}. Proceeding...`;
+                    setTimeout(() => setChapter(2), 2000);
+                }
+            } else if (key === 'BACKSPACE') {
+                wordleCurrentGuess = wordleCurrentGuess.slice(0, -1);
+                buildWordleUI();
+            } else {
+                if (wordleCurrentGuess.length < 5 && /^[A-Z]$/.test(key)) {
+                    wordleCurrentGuess += key;
+                    buildWordleUI();
+                }
+            }
+        }
+
+        // ================= CHAPTER 2: MEMORY MATCH =================
+        function renderMemory() {
+            return `
+                <div class="chapter-fade" style="display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 500px; width: 100%; gap: 32px;">
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.3em; color: #737373;">Mini Game II</span>
+                        <h2 class="serif-title" style="font-size: 38px; font-weight: 300; color: #f5f5f5;">Memory Match</h2>
+                        <p style="color: #a3a3a3; font-size: 13px;">Find all matching pairs of some of our many memories.</p>
+                    </div>
+                    <div class="memory-grid" id="memory-grid"></div>
+                    <div id="memory-msg" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; color: #34d399; height: 24px;"></div>
+                </div>
+            `;
+        }
+
+        function initMemory() {
+            memoryFlipped = [];
+            memoryMatched = [];
+            memoryCanClick = true;
+            const deck = [...MEMORY_PHOTOS, ...MEMORY_PHOTOS]
+                .sort(() => Math.random() - 0.5)
+                .map((item, idx) => ({ uniqueId: idx, ...item }));
+            memoryCards = deck;
+            buildMemoryUI();
+        }
+
+        function buildMemoryUI() {
+            const grid = document.getElementById('memory-grid');
+            grid.innerHTML = '';
+            memoryCards.forEach((card, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'memory-card';
+                const isFlipped = memoryFlipped.includes(idx) || memoryMatched.includes(idx);
+                btn.disabled = !memoryCanClick || isFlipped;
+                
+                if (isFlipped) {
+                    btn.innerHTML = `<img src="${card.url}" alt="Memory">`;
+                    btn.style.borderColor = '#525252';
+                } else {
+                    btn.innerHTML = `<span class="serif-title" style="color: #525252; font-size: 18px;">${idx + 1}</span>`;
+                }
+                btn.onclick = () => handleMemoryClick(idx);
+                grid.appendChild(btn);
+            });
+        }
+
+        function handleMemoryClick(idx) {
+            if (!memoryCanClick || memoryFlipped.includes(idx) || memoryMatched.includes(idx)) return;
+            memoryFlipped.push(idx);
+            buildMemoryUI();
+
+            if (memoryFlipped.length === 2) {
+                memoryCanClick = false;
+                const [firstIdx, secondIdx] = memoryFlipped;
+                if (memoryCards[firstIdx].id === memoryCards[secondIdx].id) {
+                    memoryMatched.push(firstIdx, secondIdx);
+                    memoryFlipped = [];
+                    memoryCanClick = true;
+                    buildMemoryUI();
+
+                    if (memoryMatched.length === memoryCards.length) {
+                        document.getElementById('memory-msg').textContent = 'All memories matched! Next minigame...';
+                        setTimeout(() => setChapter(3), 1500);
+                    }
+                } else {
+                    setTimeout(() => {
+                        memoryFlipped = [];
+                        memoryCanClick = true;
+                        buildMemoryUI();
+                    }, 800);
+                }
+            }
+        }
+
+        // ================= CHAPTER 3: SLIME MAKING STUDIO (TRUE 3D) =================
+        function renderSlimeStudio() {
+            return `
+                <div class="chapter-fade" style="display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 500px; width: 100%; gap: 24px;">
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.3em; color: #737373;">Mini Game III</span>
+                        <h2 class="serif-title" style="font-size: 32px; font-weight: 300; color: #f5f5f5;">Slime Making Studio</h2>
+                        <p id="slime-instruction" style="color: #a3a3a3; font-size: 12px;">Step 1: Choose your glue</p>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div style="width: 100%; max-width: 320px; background-color: #171717; height: 6px; border-radius: 9999px; overflow: hidden; border: 1px solid #262626;">
+                        <div id="slime-bar" style="background-color: #ffffff; height: 100%; width: 0%; transition: width 0.1s linear;"></div>
+                    </div>
+
+                    <!-- Step Header Indicator Above Slime -->
+                    <div id="slime-step-header" style="font-size: 11px; letter-spacing: 0.25em; color: #a3a3a3; font-weight: 600; text-transform: uppercase;">SELECT GLUE TYPE</div>
+
+                    <!-- True 3D Three.js Container -->
+                    <div class="slime-container" id="slime-canvas-container"></div>
+
+                    <!-- Controls & Next Button -->
+                    <div id="slime-controls" style="display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%;"></div>
+                </div>
+            `;
+        }
+
+        function initSlimeStudio() {
+            slimeStep = 0;
+            slimeGlue = 'Classic Clear';
+            slimeColorHex = '#ec4899';
+            slimeDecoration = 'Hearts ❤️';
+            slimeAngleSum = 0;
+
+            buildSlimeStudioUI();
+            initThreeJSSlime();
+        }
+
+        function buildSlimeStudioUI() {
+            const instr = document.getElementById('slime-instruction');
+            const controls = document.getElementById('slime-controls');
+            const bar = document.getElementById('slime-bar');
+            const stepHeader = document.getElementById('slime-step-header');
+            const container = document.getElementById('slime-canvas-container');
+            controls.innerHTML = '';
+
+            let basePct = (slimeStep / 5) * 100;
+            bar.style.width = `${basePct}%`;
+
+            if (slimeStep === 5) {
+                if (container) container.classList.add('preview-mode');
+                if (controls) controls.style.pointerEvents = 'auto';
+            } else {
+                if (container) container.classList.remove('preview-mode');
+            }
+
+            if (slimeStep === 0) {
+                instr.textContent = 'Step 1: Choose your clear glue type';
+                stepHeader.textContent = 'SELECT GLUE TYPE';
+                const row = document.createElement('div');
+                row.style.cssText = 'display: flex; gap: 8px; justify-content: center;';
+                [
+                    { name: 'Classic Clear' },
+                    { name: 'Glossy Thick' },
+                    { name: 'Shimmer Gel' }
+                ].forEach(g => {
+                    const btn = document.createElement('button');
+                    btn.textContent = g.name;
+                    btn.className = `btn-secondary ${slimeGlue === g.name ? 'selected' : ''}`;
+                    btn.onclick = () => {
+                        slimeGlue = g.name;
+                        buildSlimeStudioUI();
+                        updateThreeSlimeMaterial();
+                    };
+                    row.appendChild(btn);
+                });
+                controls.appendChild(row);
+
+                const nextBtn = document.createElement('button');
+                nextBtn.textContent = 'Next Step →';
+                nextBtn.className = 'btn-primary';
+                nextBtn.style.marginTop = '8px';
+                nextBtn.onclick = () => {
+                    slimeStep = 1;
+                    buildSlimeStudioUI();
+                };
+                controls.appendChild(nextBtn);
+
+            } else if (slimeStep === 1) {
+                instr.textContent = 'Step 2: Choose your slime color';
+                stepHeader.textContent = 'CHOOSE SLIME COLOR';
+                const row = document.createElement('div');
+                row.style.cssText = 'display: flex; gap: 12px; justify-content: center; align-items: center;';
+                const colors = [
+                    { name: 'Rose Pink', hex: '#ec4899' },
+                    { name: 'Lavender', hex: '#8b5cf6' },
+                    { name: 'Sky Blue', hex: '#0ea5e9' },
+                    { name: 'Mint Green', hex: '#10b981' }
+                ];
+                colors.forEach(c => {
+                    const btn = document.createElement('button');
+                    btn.style.cssText = `width: 36px; height: 36px; border-radius: 50%; background-color: ${c.hex}; border: 2px solid ${slimeColorHex === c.hex ? '#ffffff' : '#262626'}; cursor: pointer; transition: transform 0.2s;`;
+                    btn.title = c.name;
+                    btn.onclick = () => {
+                        slimeColorHex = c.hex;
+                        buildSlimeStudioUI();
+                        updateThreeSlimeMaterial();
+                    };
+                    row.appendChild(btn);
+                });
+                controls.appendChild(row);
+
+                const nextBtn = document.createElement('button');
+                nextBtn.textContent = 'Knead & Mix Activator →';
+                nextBtn.className = 'btn-primary';
+                nextBtn.style.marginTop = '8px';
+                nextBtn.onclick = () => {
+                    slimeStep = 2;
+                    slimeAngleSum = 0;
+                    buildSlimeStudioUI();
+                };
+                controls.appendChild(nextBtn);
+
+            } else if (slimeStep === 2) {
+                instr.textContent = 'Step 3: Move your mouse in circles inside the bowl to knead & mix activator!';
+                stepHeader.textContent = 'KNEAD ACTIVATOR';
+
+            } else if (slimeStep === 3) {
+                updateDecorationsOnSlime();
+
+                instr.textContent = 'Step 4: Choose your decoration';
+                stepHeader.textContent = 'SELECT DECORATION';
+                const row = document.createElement('div');
+                row.style.cssText = 'display: flex; gap: 8px; justify-content: center;';
+                ['Hearts ❤️', 'Stars 🌟', 'Diamonds 💎'].forEach(deco => {
+                    const btn = document.createElement('button');
+                    btn.textContent = deco;
+                    btn.className = `btn-secondary ${slimeDecoration === deco ? 'selected' : ''}`;
+                    btn.onclick = () => {
+                        slimeDecoration = deco;
+                        buildSlimeStudioUI();
+                        updateDecorationsOnSlime();
+                    };
+                    row.appendChild(btn);
+                });
+                controls.appendChild(row);
+
+                const nextBtn = document.createElement('button');
+                nextBtn.textContent = 'Final Kneading Step →';
+                nextBtn.className = 'btn-primary';
+                nextBtn.style.marginTop = '8px';
+                nextBtn.onclick = () => {
+                    slimeStep = 4;
+                    slimeAngleSum = 0;
+                    buildSlimeStudioUI();
+                };
+                controls.appendChild(nextBtn);
+
+            } else if (slimeStep === 4) {
+                instr.textContent = 'Step 5: Knead the final decorated slime in circles until complete!';
+                stepHeader.textContent = 'FINAL KNEADING';
+
+            } else if (slimeStep === 5) {
+                instr.textContent = 'Slime Completed!';
+                stepHeader.textContent = 'Woah look at that beautiful slime';
+                
+                if (controls) controls.enabled = true;
+
+                const finishBtn = document.createElement('button');
+                finishBtn.textContent = 'Next';
+                finishBtn.className = 'btn-primary';
+                finishBtn.onclick = () => {
+                    setChapter(5); // Go to countdown screen without triggering confetti here
+                };
+                controls.appendChild(finishBtn);
+            }
+        }
+
+        function initThreeJSSlime() {
+            const container = document.getElementById('slime-canvas-container');
+            if (!container) return;
+
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+            camera.position.z = 4.8;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(380, 380);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.enabled = false;
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.4);
+            directionalLight.position.set(5, 5, 5);
+            scene.add(directionalLight);
+
+            slimeGeo = new THREE.SphereGeometry(1.25, 32, 32);
+            originalPositions = slimeGeo.attributes.position.array.slice();
+
+            updateThreeSlimeMaterial();
+
+            slimeMesh = new THREE.Mesh(slimeGeo, slimeMat);
+            scene.add(slimeMesh);
+
+            decoMeshGroup = new THREE.Group();
+            scene.add(decoMeshGroup);
+            updateDecorationsOnSlime();
+
+            container.onmousemove = (e) => {
+                if (slimeStep === 5) return;
+
+                const rect = renderer.domElement.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                mouseRay.x = (x / rect.width) * 2 - 1;
+                mouseRay.y = -(y / rect.height) * 2 + 1;
+
+                raycaster.setFromCamera(mouseRay, camera);
+                const intersects = raycaster.intersectObject(slimeMesh);
+                isHoveringSlime = intersects.length > 0;
+                if (isHoveringSlime && intersects[0]) {
+                    mouseWorldPos.copy(intersects[0].point);
+                }
+
+                if (slimeStep === 2 || slimeStep === 4) {
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    const dx = x - centerX;
+                    const dy = y - centerY;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+
+                    if (dist < 150) {
+                        const angle = Math.atan2(dy, dx);
+                        if (slimeLastMouseX !== 0 && slimeLastMouseY !== 0) {
+                            const prevDx = slimeLastMouseX - centerX;
+                            const prevDy = slimeLastMouseY - centerY;
+                            const prevAngle = Math.atan2(prevDy, prevDx);
+                            let diff = angle - prevAngle;
+                            if (diff > Math.PI) diff -= Math.PI * 2;
+                            if (diff < -Math.PI) diff += Math.PI * 2;
+                            slimeAngleSum += Math.abs(diff);
+
+                            let currentAngleProgress = Math.min(100, (slimeAngleSum / (Math.PI * 28)) * 100);
+                            let bar = document.getElementById('slime-bar');
+                            if (bar) {
+                                if (slimeStep === 2) {
+                                    let exactVal = 40 + (currentAngleProgress / 100) * 20;
+                                    bar.style.width = `${exactVal}%`;
+                                    if (currentAngleProgress >= 100) {
+                                        slimeStep = 3;
+                                        buildSlimeStudioUI();
+                                    }
+                                } else if (slimeStep === 4) {
+                                    let exactVal = 80 + (currentAngleProgress / 100) * 20;
+                                    bar.style.width = `${exactVal}%`;
+                                    if (currentAngleProgress >= 100) {
+                                        slimeStep = 5;
+                                        buildSlimeStudioUI();
+                                        updateThreeSlimeMaterial();
+                                    }
+                                }
+                            }
+                        }
+                        slimeLastMouseX = x;
+                        slimeLastMouseY = y;
+                    }
+                }
+            };
+
+            container.onmouseleave = () => {
+                isHoveringSlime = false;
+                slimeLastMouseX = 0;
+                slimeLastMouseY = 0;
+            };
+
+            const clock = new THREE.Clock();
+            function animate() {
+                animFrameId = requestAnimationFrame(animate);
+                const time = clock.getElapsedTime();
+
+                if (controls) controls.update();
+
+                if (slimeMesh && slimeGeo) {
+                    const positionAttr = slimeGeo.attributes.position;
+                    const vertex = new THREE.Vector3();
+
+                    for (let i = 0; i < positionAttr.count; i++) {
+                        vertex.fromArray(originalPositions, i * 3);
+
+                        const wave = Math.sin(time * 3 + vertex.x * 2 + vertex.y * 2) * 0.06;
+                        vertex.x += wave;
+                        vertex.y += Math.cos(time * 2.5 + vertex.z * 2) * 0.06;
+
+                        if (slimeStep !== 5 && isHoveringSlime) {
+                            const worldVertex = vertex.clone().applyMatrix4(slimeMesh.matrixWorld);
+                            const distToMouse = worldVertex.distanceTo(mouseWorldPos);
+                            if (distToMouse < 1.3) {
+                                const pushFactor = (1.3 - distToMouse) * 0.45;
+                                vertex.x += (vertex.x - mouseWorldPos.x) * pushFactor;
+                                vertex.y += (vertex.y - mouseWorldPos.y) * pushFactor;
+                                vertex.z += pushFactor * 0.6;
+                            }
+                        }
+
+                        positionAttr.setXYZ(i, vertex.x, vertex.y, vertex.z);
+                    }
+                    positionAttr.needsUpdate = true;
+                    if (slimeStep !== 5) {
+                        slimeMesh.rotation.y = time * 0.25;
+                        if (decoMeshGroup) decoMeshGroup.rotation.y = time * 0.25;
+                    }
+                }
+
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+        function updateThreeSlimeMaterial() {
+            let opacity = 0.5;
+            let transmissionVal = 0.65;
+            if (slimeGlue === 'Glossy Thick') { transmissionVal = 0.0; opacity = 0.95; }
+            else if (slimeGlue === 'Shimmer Gel') { transmissionVal = 0.3; opacity = 0.85; }
+
+            if (slimeStep >= 5) opacity = 0.98;
+
+            slimeMat = new THREE.MeshPhysicalMaterial({
+                color: new THREE.Color(slimeColorHex),
+                roughness: 0.1,
+                metalness: 0.1,
+                transmission: transmissionVal,
+                transparent: true,
+                opacity: opacity,
+                reflectivity: 0.9,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.1
+            });
+
+            if (slimeMesh) {
+                slimeMesh.material = slimeMat;
+            }
+        }
+
+        function updateDecorationsOnSlime() {
+            if (!decoMeshGroup) return;
+            while(decoMeshGroup.children.length > 0) { 
+                decoMeshGroup.remove(decoMeshGroup.children[0]); 
+            }
+
+            if (slimeStep < 3) return;
+
+            let shapeColor = 0xffffff;
+            let shapeType = 'heart';
+
+            if (slimeDecoration.includes('Hearts')) {
+                shapeColor = 0xff69b4;
+                shapeType = 'heart';
+            } else if (slimeDecoration.includes('Stars')) {
+                shapeColor = 0xfde047;
+                shapeType = 'star';
+            } else if (slimeDecoration.includes('Diamonds')) {
+                shapeColor = 0x38bdf8;
+                shapeType = 'diamond';
+            }
+
+            const count = 10;
+            for(let i=0; i<count; i++) {
+                let geo;
+                if (shapeType === 'heart') {
+                    const heartShape = new THREE.Shape();
+                    heartShape.setFromPoints([
+                        new THREE.Vector2(0, 0.15),
+                        new THREE.Vector2(0.18, 0.35),
+                        new THREE.Vector2(0.35, 0.2),
+                        new THREE.Vector2(0.35, 0),
+                        new THREE.Vector2(0, -0.3),
+                        new THREE.Vector2(-0.35, 0),
+                        new THREE.Vector2(-0.35, 0.2),
+                        new THREE.Vector2(-0.18, 0.35),
+                        new THREE.Vector2(0, 0.15)
+                    ]);
+                    const extrudeSettings = { depth: 0.08, bevelEnabled: true, bevelSegments: 2, steps: 1, bevelSize: 0.03, bevelThickness: 0.03 };
+                    geo = new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
+                    geo.scale(0.35, 0.35, 0.35);
+                    geo.center();
+                } else if (shapeType === 'star') {
+                    const starShape = new THREE.Shape();
+                    const pts = 5;
+                    const outerRadius = 0.22;
+                    const innerRadius = 0.1;
+                    for (let s = 0; s < pts * 2; s++) {
+                        const l = s % 2 === 0 ? outerRadius : innerRadius;
+                        const a = (s / (pts * 2)) * Math.PI * 2 - Math.PI / 2;
+                        const sx = Math.cos(a) * l;
+                        const sy = Math.sin(a) * l;
+                        if (s === 0) starShape.moveTo(sx, sy);
+                        else starShape.lineTo(sx, sy);
+                    }
+                    starShape.closePath();
+                    const extrudeSettings = { depth: 0.06, bevelEnabled: true, bevelSegments: 2, steps: 1, bevelSize: 0.02, bevelThickness: 0.02 };
+                    geo = new THREE.ExtrudeGeometry(starShape, extrudeSettings);
+                    geo.center();
+                } else {
+                    geo = new THREE.OctahedronGeometry(0.16);
+                }
+
+                const mat = new THREE.MeshStandardMaterial({ color: shapeColor, roughness: 0.2, metalness: 0.8 });
+                const mesh = new THREE.Mesh(geo, mat);
+
+                const phi = Math.acos(-1 + (2 * i) / count);
+                const theta = Math.sqrt(count * Math.PI) * phi;
+
+                mesh.position.set(
+                    1.2 * Math.cos(theta) * Math.sin(phi),
+                    1.2 * Math.sin(theta) * Math.sin(phi),
+                    1.2 * Math.cos(phi)
+                );
+                mesh.lookAt(0,0,0);
+                decoMeshGroup.add(mesh);
+            }
+        }
+
+        // ================= CHAPTER 5: COUNTDOWN SCREEN =================
+        function renderCountdown() {
+            return `
+                <div class="chapter-fade" style="display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 400px; width: 100%; gap: 24px;">
+                    <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.3em; color: #737373;">Almost there</span>
+                    <h2 class="serif-title" style="font-size: 32px; font-weight: 300; color: #f5f5f5;">Opening...</h2>
+                    <div id="countdown-number" class="serif-title" style="font-size: 96px; font-weight: 300; color: #ffffff; line-height: 1;">10</div>
+                    <p style="color: #a3a3a3; font-size: 13px;">Get ready for the final surprise!</p>
+                </div>
+            `;
+        }
+
+        function initCountdown() {
+            let timeLeft = 10;
+            const counterEl = document.getElementById('countdown-number');
+            
+            if (countdownInterval) clearInterval(countdownInterval);
+            
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                if (counterEl) {
+                    counterEl.textContent = timeLeft;
+                }
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    triggerConfetti(); // Trigger confetti right when countdown finishes and book is shown
+                    setChapter(4); // Open the book/collage page
+                }
+            }, 1000);
+        }
+
+        // ================= CHAPTER 4: 3D BOOK & COLLAGE =================
+        function renderBook() {
+            return `
+                <div class="chapter-fade" style="display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 900px; gap: 48px; padding: 24px 0;">
+                    <!-- Book Page Spread -->
+                    <div class="book-spread" id="book-spread-container">
+                        <!-- Left Page: Text -->
+                        <div id="book-left-column" style="display: flex; flex-direction: column; justify-content: space-between; gap: 24px; padding-right: 20px; border-right: 1px solid #262626;">
+                            <div style="display: flex; flex-direction: column; gap: 16px;">
+                                <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; color: #737373;" id="book-page-indicator">Page 1 of 3</span>
+                                <p class="serif-title" style="font-size: 26px; color: #e5e5e5; line-height: 1.5; font-weight: 300;" id="book-text-content">
+                                    "Some people walk into your life and instantly feel like home. Distance has never been a barrier for us—across time zones, miles, and busy schedules, you've remained my absolute anchor, my confidante, and my best friend."
+                                </p>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 24px; border-top: 1px solid #262626;">
+                                <button id="prev-page-btn" onclick="prevBookPage()" style="background:none; border:none; color:#d4d4d4; font-size:11px; letter-spacing:0.15em; text-transform:uppercase; cursor:pointer;">Previous</button>
+                                <button id="next-page-btn" onclick="nextBookPage()" style="background:none; border:none; color:#ffffff; font-size:11px; letter-spacing:0.15em; text-transform:uppercase; font-weight:600; cursor:pointer;">Next Page →</button>
+                            </div>
+                        </div>
+
+                        <!-- Right Page: Photo / Collage -->
+                        <div id="book-right-page" style="position: relative; width: 100%; display: flex; align-items: center; justify-content: center;">
+                            <img id="book-image-element" src="photo5.jpg" class="book-img" alt="Book Illustration">
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function initBook() {
+            bookPageIndex = 0;
+            updateBookUI();
+        }
+
+        function updateBookUI() {
+            const indicator = document.getElementById('book-page-indicator');
+            const textContent = document.getElementById('book-text-content');
+            const rightPage = document.getElementById('book-right-page');
+            const leftColumn = document.getElementById('book-left-column');
+            const spreadContainer = document.getElementById('book-spread-container');
+
+            if (!indicator) return;
+
+            indicator.textContent = `Page ${bookPageIndex + 1} of 3`;
+
+            if (bookPageIndex === 0) {
+                spreadContainer.classList.remove('full-width');
+                leftColumn.style.display = 'flex';
+                
+                leftColumn.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                        <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; color: #737373;" id="book-page-indicator">Page 1 of 3</span>
+                        <p class="serif-title" style="font-size: 26px; color: #e5e5e5; line-height: 1.5; font-weight: 300;" id="book-text-content">
+                            "${BOOK_PAGES[0].text}"
+                        </p>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 24px; border-top: 1px solid #262626;">
+                        <button id="prev-page-btn" onclick="prevBookPage()" style="background:none; border:none; color:#d4d4d4; font-size:11px; letter-spacing:0.15em; text-transform:uppercase; cursor:not-allowed; opacity: 0.3;" disabled>Previous</button>
+                        <button id="next-page-btn" onclick="nextBookPage()" style="background:none; border:none; color:#ffffff; font-size:11px; letter-spacing:0.15em; text-transform:uppercase; font-weight:600; cursor:pointer;">Next Page →</button>
+                    </div>
+                `;
+
+                rightPage.innerHTML = `<img id="book-image-element" src="${BOOK_PAGES[0].image}" class="book-img" alt="Illustration">`;
+
+            } else if (bookPageIndex === 1) {
+                spreadContainer.classList.remove('full-width');
+                leftColumn.style.display = 'flex';
+                
+                leftColumn.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                        <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; color: #737373;" id="book-page-indicator">Page 2 of 3</span>
+                        <p class="serif-title" style="font-size: 26px; color: #e5e5e5; line-height: 1.5; font-weight: 300;" id="book-text-content">
+                            "${BOOK_PAGES[1].text}"
+                        </p>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 24px; border-top: 1px solid #262626;">
+                        <button id="prev-page-btn" onclick="prevBookPage()" style="background:none; border:none; color:#d4d4d4; font-size:11px; letter-spacing:0.15em; text-transform:uppercase; cursor:pointer; opacity: 1;">Previous</button>
+                        <button id="next-page-btn" onclick="nextBookPage()" style="background:none; border:none; color:#ffffff; font-size:11px; letter-spacing:0.15em; text-transform:uppercase; font-weight:600; cursor:pointer;">Next Page →</button>
+                    </div>
+                `;
+
+                rightPage.innerHTML = `<img id="book-image-element" src="${BOOK_PAGES[1].image}" class="book-img" alt="Illustration">`;
+
+            } else if (bookPageIndex === 2) {
+                spreadContainer.classList.add('full-width');
+                leftColumn.style.display = 'none';
+
+                // Expanded grid supporting more pictures and videos (e.g. MP4 files)
+                rightPage.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 20px; width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #262626; padding-bottom: 12px; width: 100%;">
+                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: #737373;">Page 3 of 3</span>
+                                <h3 class="serif-title" style="font-size: 24px; font-weight: 300; color: #f5f5f5;">You're special, don't let anyone make you think otherwise. Thank you for fighting for me, for us. Thank you for having the patience you have with me. Thank you for following my silly jokes. Thank you for everything, happy 19th birthday 🤍. For many more and forever, I love you.</h3>
+                            </div>
+                            <div style="display: flex; gap: 16px;">
+                                <button onclick="prevBookPage()" style="background:none; border:none; color:#d4d4d4; font-size:11px; letter-spacing:0.15em; text-transform:uppercase; cursor:pointer;">← Previous</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Expanded Collage Grid for Images & Videos (Change filenames to your own) -->
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-height: 400px; overflow-y: auto; padding-right: 4px;">
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo1.png" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo2.png" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo3.png" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo4.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo5.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo6.png" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo7.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo8.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo9.png" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo10.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo11.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo12.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo13.jpg" style="width:100% ; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo14.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo15.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo16.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo17.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo18.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo19.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo20.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo21.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo22.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo23.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo24.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo25.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo26.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo27.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626;"><img src="photo28.jpg" style="width:100%; height:100%; object-fit:cover;"></div>
+                            
+                            <!-- Video Example: Change video1.mp4 to your local video filename -->
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626; background: #000;">
+                                <video src="yay.mov" controls style="width:100%; height:100%; object-fit:cover;"></video>
+                            </div>
+                            <div style="aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid #262626; background: #000;">
+                                <video src="W.mov" controls style="width:100%; height:100%; object-fit:cover;"></video>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function nextBookPage() {
+            if (bookPageIndex < 2) {
+                bookPageIndex++;
+                updateBookUI();
+            }
+        }
+
+        function prevBookPage() {
+            if (bookPageIndex > 0) {
+                bookPageIndex--;
+                updateBookUI();
+            }
+        }
+
+        // Initial Load
+        render();
+    </script>
+</body>
+</html>
